@@ -1,7 +1,12 @@
 # webgame2
 
-`git clone`
-`npm i`
+### Setup
+```
+git clone https://github.com/Yuu6883/webgame2.git
+cd webgame2
+npm i
+```
 
-### note
-You need MongoDB community edition running on your local machine for this application to run. There's no fallback database.
+### Notes
+* You need [MongoDB community edition](https://www.mongodb.com/download-center/community) running on your local machine for this application to run. There's no fallback database.
+* There's currently no entry point yet (will use `pm2`). Some simple entry can be found in `test/`
