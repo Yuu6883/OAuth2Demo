@@ -2,6 +2,8 @@ const fs = require("fs");
 const configPath = __dirname + "/auth-config.json";
 
 let DefaultAuthConfig = {
+    StateLength: 10,
+    StateExpire: 60 * 60 * 1000, // 1 hour
     Discord: {
         ID: "",
         Secret: "",

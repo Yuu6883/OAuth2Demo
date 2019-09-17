@@ -1,26 +1,32 @@
 interface Config {
-    API: APIConfig;
+    API:  APIConfig;
     Auth: AuthConfig;
 }
 
 interface APIConfig {
-    DBPath: string;
-    DBName: string;
+    DBPath:        string;
+    DBName:        string;
     AllowedOrigin: string;
-    CookieName: string;
-    CookieAge: number;
-    Port: number;
+    InfoCache:     number;
+    UserIDLength:  number;
+    CookieName:    string;
+    CookieLength:  number;
+    CookieAge:     number;
+    Port:          number;
+    CheckIP:       boolean;
 }
 
 interface AuthConfig {
-    Discord: AuthEntry;
-    Facebook: AuthEntry;
-    Google: AuthEntry;
+    StateLength: number;
+    StateExpire: number;
+    Discord:     AuthEntry;
+    Facebook:    AuthEntry;
+    Google:      AuthEntry;
 }
 
 interface AuthEntry {
-    ID: string;
-    Secret: string;
+    ID:       string;
+    Secret:   string;
     Redirect: string;
 }
 
@@ -28,6 +34,8 @@ declare type OAuth2Type = "discord" | "google" | "facebook";
 
 interface UserEntry {
     UserID:        string,
+    UserInfo:      Map<string, string>,
+    UserInfoCache: Date,
     OAuth2ID:      string,
     OAuth2Type:    OAuth2Type,
     OAuth2Token:   string,
@@ -38,11 +46,19 @@ interface UserEntry {
 }
 declare type UserDocument = import("mongoose").Document & UserEntry;
 
+interface StateEntry {
+    id:        string;
+    ip:        string;
+    redirect:  string;
+    validTill: Date;
+}
+declare type StateDocument = import("mongoose").Document & StateEntry;
+
 declare type LogEventLevel = "DEBUG" | "ACCESS" | "INFO" | "WARN" | "ERROR" | "FATAL" | "TEST";
 declare type LogEvent = (date: Date, level: LogEventLevel, message: string) => void;
 declare type LogMessageData = any[];
 
-declare type APIRequest = import("express").Request;
+declare type APIRequest = import("express").Request & { origin: string };
 declare type APIResponse = import("express").Response;
 
 declare type APIServer = import("./src/servers/api/modules/APIServer");
@@ -59,19 +75,21 @@ interface APIRouter {
 }
 
 interface DiscordResponse {
-    error?: string;
+    error?:             string;
     error_description?: string;
 }
 
 interface DiscordAuthorization {
-    access_token: string;
+    access_token:  string;
     refresh_token: string;
 }
 
 interface DiscordUser {
-    id: string;
-    username: string;
+    id:            string;
+    username:      string;
     discriminator: string;
-    avatar: string;
-    locale: string;
+    avatar:        string;
+    locale:        string;
 }
+
+declare type $ = import("jquery");
