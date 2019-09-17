@@ -1,8 +1,8 @@
-const btoa = require("btoa");
 const fetch = require("node-fetch");
 
-const OAuth2 = "https://discordapp.com/api/oauth2/";
+const OAuth2 = "https://www.googleapis.com/oauth2/v4/";
 const UserEndpoint = "http://discordapp.com/api/v6/users/@me";
+const SCOPE = "https://www.googleapis.com/auth/userinfo.profile&approval_prompt=force&access_type=offline";
 
 class GoogleAPI {
     
@@ -10,12 +10,19 @@ class GoogleAPI {
     constructor(app) {
 
         this.app = app;
-        this.authorization = "Basic " + 
-            btoa(`${this.config.Auth.Discord.ID}:` + 
-                 `${this.config.Auth.Discord.Redirect}`);
+        this.authURI = `&redirect_uri=${this.config.Redirect}` + 
+                       `&client_id=${this.config.ID}` + 
+                       `&client_secret=${this.config.Secret}`;
+
+        this.redirect = encodeURIComponent(
+                            `https://accounts.google.com/o/oauth2/auth?` + 
+                            `client_id=${this.config.ID}` + 
+                            `&redirect_uri=${this.config.Redirect}` + 
+                            `&response_type=code&` + 
+                            `scope=${SCOPE}`);
     }
 
-    get config() { return this.app.config; }
+    get config() { return this.app.config.Auth.Google; }
     get logger() { return this.app.logger; }
 
     /**
@@ -27,22 +34,22 @@ class GoogleAPI {
 
         const type = refresh ? "refresh_token" : "authorization_code";
         const codeType = refresh ? "refresh_token" : "code";
-        const url = `${OAuth2}token?grant_type=${type}&${codeType}=${code}&` + 
-                    `redirect_uri=${this.config.Auth.Discord.Redirect}`;
+
+        const url = `${OAuth2}token?grant_type=${type}&${codeType}=${code}${this.authURI}`;
 
         const response = await fetch(url, {
             method: "POST",
-            headers: { Authorization: this.authorization }
+            headers: { "content-type": "application/x-www-form-urlencoded" }
         });
 
         return await response.json();
     }
 
     /**
-     * @param {String} discordAccessToken
-     * @returns {DiscordResponse & DiscordUser}
+     * @param {String} googleAccessToken
+     * @returns {}
      */
-    async fetchUserInfo(discordAccessToken) {
+    async parseUserInfo(googleAccessToken) {
 
         const response = await fetch(UserEndpoint, {
             method: "GET",

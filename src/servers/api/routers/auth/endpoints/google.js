@@ -6,7 +6,7 @@ module.exports = {
     postLogin: function(req, res) {
         
     },
-    getLogpit: function(req, res) {
+    getLogout: function(req, res) {
         
     },
     postLogout: function(req, res) {

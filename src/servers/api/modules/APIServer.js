@@ -2,14 +2,19 @@
 const mongoose = require("mongoose");
 
 const express = require("express");
-const cookies = require("cookie-parser");
 
+const Logger = require("./Logger");
+
+// Routers
 const AuthRouter = require("../routers/auth");
 const Cors = require("./Cors");
-const Logger = require("./Logger");
+const IP = require("./IP");
 const ExpressLogger = require("./ExpressLogger");
 const OAuth2 = require("../routers/auth/endpoints/oauth2");
+
+// Collections
 const UserCollection = require("../database/Users");
+const StateCollection = require("../database/State");
 
 module.exports = class APIServer {
 
@@ -35,6 +40,7 @@ module.exports = class APIServer {
             });
 
         this.users = new UserCollection(this);
+        this.state = new StateCollection(this);
         this.logger.info(`Connected to MongoDB "${this.config.API.DBName}"`);
 
     }
@@ -45,10 +51,10 @@ module.exports = class APIServer {
         const app = express()
             .disable("x-powered-by")
             .set("trust proxy", 1)
+            .use(IP.bind(this))
             .use(ExpressLogger(this.logger))
-            .use(Cors)
-            .use(cookies())
-            .use(AuthRouter.bind(this)());
+            .use(Cors.bind(this))
+            .use(this.router);
 
         await this.init();
 
@@ -86,6 +92,7 @@ module.exports = class APIServer {
         }
     }
 
+    /** @returns {express.Router} */
     get router() { return AuthRouter.bind(this)(); }
 
 }

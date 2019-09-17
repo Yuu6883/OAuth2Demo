@@ -11,16 +11,18 @@ class DiscordAPI {
 
         this.app = app;
         this.authorization = "Basic " + 
-            btoa(`${this.config.ID}:${this.config.Redirect}`);
-
-        this.redirect = `${OAuth2}authorize?` + 
-                        `client_id=${this.config.ID}&` + 
-                        `scope=identify&response_type=code&` + 
-                        `redirect_uri=${this.config.Redirect}`;
+            btoa(`${this.config.ID}:${this.config.Secret}`);
     }
 
     get config() { return this.app.config.Auth.Discord; }
     get logger() { return this.app.logger; }
+
+    get redirect() {
+        return `${OAuth2}authorize?` + 
+                `client_id=${this.config.ID}&` + 
+                `scope=identify&response_type=code&` + 
+                `redirect_uri=${this.config.Redirect}`;
+    }
 
     /**
      * @param {String} code

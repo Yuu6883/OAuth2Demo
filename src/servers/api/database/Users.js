@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
+const uid = require("uid-safe");
 
 /** @type {mongoose.Schema<UserEntry>} */
 const UserSchema = new mongoose.Schema({
     UserID:        { type: String, required: true  },
+    UserInfo:      { type: Map,    of: String      },
+    UserInfoCache: { type: Date,   required: false },
     OAuth2ID:      { type: String, required: true  },
-    OAuth2Type:     { type: String, required: true, enum: [ "discord", "google", "facebook" ] },
+    OAuth2Type:    { type: String, required: true, enum: [ "discord", "google", "facebook" ] },
     OAuth2Token:   { type: String, required: false },
     OAuth2Refresh: { type: String, required: false },
     CookieToken:   { type: String, required: false },
@@ -24,6 +27,8 @@ module.exports = class UserCollection {
     /** @param {APIServer} app */
     constructor(app) {
         this.app = app;
+        this.IDRegex = new RegExp(`^[0-9a-zA-Z\-_]{${
+            Math.ceil(this.app.config.API.CookieLength * 4 / 3)}}$`);
     }
 
     /**
@@ -39,32 +44,68 @@ module.exports = class UserCollection {
     async findByUserID(UserID) {
         return await UserModel.findOne({ UserID });
     }
+
+    /** @param {string} token */
+    confirmToken(token) {
+        return this.IDRegex.test(token);
+    }
     
     /**
      * @param {string} CookieToken
      */
-    async findByAuthedCookie(CookieToken) {
+    async findByAuthedToken(CookieToken) {
         return await UserModel.findOne({ CookieToken });
     }
 
     /**
-     * @param {string} UserID
+     * @param {string} OAuth2ID 
+     * @param {OAuth2Type} OAuth2Type 
+     */
+    async create(OAuth2ID, OAuth2Type) {
+        return await UserModel.create({
+            UserID: await uid(this.app.config.API.UserIDLength),
+            OAuth2ID,
+            OAuth2Type
+        });
+    }
+
+    /**
+     * @param {UserDocument} user
      * @param {string} OAuth2Token
      * @param {string} OAuth2Refresh
+     * @param {Map<string, string>} UserInfo
      */
-    async authorize(UserID, OAuth2Token, OAuth2Refresh) {
+    async authorize(user, OAuth2Token, OAuth2Refresh, UserInfo) {
 
-        const user = await this.findByOAuth2ID(UserID);
-        if (user == null) return null;
+        let token = await uid(this.app.config.API.CookieLength);
 
         user.OAuth2Token = OAuth2Token;
         user.OAuth2Refresh = OAuth2Refresh;
-
-        // TODO: Generate token
-        // user.CookieToken = 
+        user.UserInfo = UserInfo;
+        user.UserInfoCache = new Date(Date.now() + this.app.config.API.InfoCache);
+        user.CookieToken = token;
         
         await user.save();
+        return token;
+    }
 
+    /** @param {UserDocument} user */
+    async deauthorize(user) {
+
+        user.OAuth2Token   = undefined;
+        user.OAuth2Refresh = undefined;
+        user.CookieToken   = undefined;
+
+        await user.save();
+    }
+
+    /** @param {UserDocument} user */
+    async renewToken(user) {
+
+        let token = await uid(this.app.config.API.CookieLength);
+        user.CookieToken = token;
+
+        await user.save();
         return token;
     }
 }

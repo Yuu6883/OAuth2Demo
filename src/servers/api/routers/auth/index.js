@@ -1,4 +1,5 @@
 const Router = require("express").Router;
+const cookies = require("cookie-parser");
 
 /** @param {AuthEntry} entry */
 const checkEntries = entry => entry.ID && entry.Secret && entry.Redirect;
@@ -16,13 +17,15 @@ const useRouter = (app, apiRouter) => {
 const DiscordRouter = require("./endpoints/discord");
 const GoogleRouter = require("./endpoints/google");
 const FacebookRouter = require("./endpoints/facebook");
-const BadGateway = require("./endpoints/502");
+const NotImplemented = require("./endpoints/501");
 
 const AuthRouter = Router();
 
 /** @type {(this: APIServer) => import("express").Router} */
 module.exports = function() {
     
+    AuthRouter.use(cookies());
+
     // Discord route
     if (checkEntries(this.config.Auth.Discord)) {
 
@@ -30,8 +33,8 @@ module.exports = function() {
         this.logger.info("Discord  OAuth2 router loaded");
     } else {
 
-        AuthRouter.use("/discord",  useRouter(this, BadGateway));
-        this.logger.warn("Discord  OAuth2 is NOT loaded");
+        AuthRouter.use("/discord",  useRouter(this, NotImplemented));
+        this.logger.warn("Discord  OAuth2 is NOT implemented");
     }
         
     // Google route
@@ -41,8 +44,8 @@ module.exports = function() {
         this.logger.info("Google   OAuth2 router loaded");
     } else {
 
-        AuthRouter.use("/google",  useRouter(this, BadGateway));
-        this.logger.warn("Google   OAuth2 is NOT loaded");
+        AuthRouter.use("/google",  useRouter(this, NotImplemented));
+        this.logger.warn("Google   OAuth2 is NOT implemented");
     }
 
     // Facebook route
@@ -52,8 +55,8 @@ module.exports = function() {
         this.logger.info("Facebook OAuth2 router loaded");
     } else {
 
-        AuthRouter.use("/facebook",  useRouter(this, BadGateway));
-        this.logger.warn("Facebook OAuth2 is NOT loaded");
+        AuthRouter.use("/facebook",  useRouter(this, NotImplemented));
+        this.logger.warn("Facebook OAuth2 is NOT implemented");
     }
     
     return AuthRouter;
