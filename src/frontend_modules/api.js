@@ -56,8 +56,10 @@ module.exports = new class API extends EventEmitter {
         if (!this.userInfo) return;
         $.post({
             url: `/api/${this.userInfo.type}/logout`,
-            success: () => {
-                this.emit("logoutSuccess");
+            dataType: "json",
+            success: res => {
+                if (res.success)
+                    this.emit("logoutSuccess");
             },
             error: () => {
                 this.emit("logoutFail");

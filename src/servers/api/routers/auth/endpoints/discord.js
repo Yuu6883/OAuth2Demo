@@ -27,7 +27,7 @@ module.exports = {
         if (!this.users.confirmToken(cookieToken))
             return void res.clearCookie(cookieName).status(400).send("Bad Cookie");
 
-        let user = await this.users.findByAuthedToken(cookieToken);
+        let user = await this.users.findByAuthedToken(cookieToken, "discord");
 
         if (!user)
             return void res.clearCookie(cookieName).status(404).send("User not found");
@@ -77,8 +77,25 @@ module.exports = {
     getLogout: function(req, res) {
         
     },
-    postLogout: function(req, res) {
+    postLogout: async function(req, res) {
 
+        let cookieName = this.config.API.CookieName;
+        let cookieToken = req.cookies[cookieName];
+
+        if (!this.users.confirmToken(cookieToken))
+            return void res.clearCookie(cookieName).status(400).send("Bad Cookie");
+
+        let user = await this.users.findByAuthedToken(cookieToken, "discord");
+
+        if (!user)
+            return void res.clearCookie(cookieName).status(404).send("User not found");
+
+        let success = await this.OAuth2.Discord.revoke(user.OAuth2Token);
+
+        await this.users.deauthorize(user);
+
+        res.clearCookie(cookieName).send({ success });
+            
     },
     callback: async function(req, res) {
 

@@ -64,11 +64,11 @@ class DiscordAPI {
      */
     async revoke(discordAccessToken) {
 
-        const response = await fetch(`${OAuth2}revoke?token=${discordAccessToken}`, {
+        const response = await fetch(`${OAuth2}token/revoke?token=${discordAccessToken}`, {
             method: "POST",
             headers: { Authorization: this.authorization }
         });
-        return await response.json();
+        return response.status === 200;
     }
 }
 

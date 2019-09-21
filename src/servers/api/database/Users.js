@@ -52,9 +52,10 @@ module.exports = class UserCollection {
     
     /**
      * @param {string} CookieToken
+     * @param {OAuth2Type} OAuth2Type
      */
-    async findByAuthedToken(CookieToken) {
-        return await UserModel.findOne({ CookieToken });
+    async findByAuthedToken(CookieToken, OAuth2Type) {
+        return await UserModel.findOne({ CookieToken, OAuth2Type });
     }
 
     /**
