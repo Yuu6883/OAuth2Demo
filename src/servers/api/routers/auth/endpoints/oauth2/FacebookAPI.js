@@ -1,8 +1,7 @@
-const btoa = require("btoa");
 const fetch = require("node-fetch");
+const FB = require("fb");
 
-const OAuth2 = "https://discordapp.com/api/oauth2/";
-const UserEndpoint = "http://discordapp.com/api/v6/users/@me";
+const OAuth2 = "https://graph.facebook.com/v4.0/oauth/";
 
 class FacebookAPI {
     
@@ -10,58 +9,57 @@ class FacebookAPI {
     constructor(app) {
 
         this.app = app;
-        this.authorization = "Basic " + 
-            btoa(`${this.config.Auth.Discord.ID}:` + 
-                 `${this.config.Auth.Discord.Redirect}`);
+        this.authorization = `client_id=${this.config.ID}&` +
+                             `redirect_uri=${this.config.Redirect}&` +
+                             `client_secret=${this.config.Secret}&`
     }
 
-    get config() { return this.app.config; }
+    get config() { return this.app.config.Auth.Facebook; }
     get logger() { return this.app.logger; }
+
+    get redirect() {
+        return `https://www.facebook.com/v4.0/dialog/oauth?` +
+               `client_id=${this.config.ID}&` +
+               `redirect_uri=${this.config.Redirect}`;
+    }
 
     /**
      * @param {String} code
-     * @param {Boolean} refresh
-     * @returns {DiscordResponse & DiscordAuthorization}
+     * @returns {FacebookAuthorization}
      */
-    async exchange(code, refresh) {
+    async exchange(code) {
 
-        const type = refresh ? "refresh_token" : "authorization_code";
-        const codeType = refresh ? "refresh_token" : "code";
-        const url = `${OAuth2}token?grant_type=${type}&${codeType}=${code}&` + 
-                    `redirect_uri=${this.config.Auth.Discord.Redirect}`;
+        const url = `${OAuth2}access_token?${this.authorization}code=${code}`;
 
         const response = await fetch(url, {
-            method: "POST",
-            headers: { Authorization: this.authorization }
-        });
-
-        return await response.json();
-    }
-
-    /**
-     * @param {String} discordAccessToken
-     * @returns {DiscordResponse & DiscordUser}
-     */
-    async fetchUserInfo(discordAccessToken) {
-
-        const response = await fetch(UserEndpoint, {
             method: "GET",
-            headers: { Authorization : `Bearer ${discordAccessToken}` }
+            headers: { Authorization: this.authorization }
         });
+
         return await response.json();
     }
 
     /**
-     * @param {String} discordAccessToken
-     * @returns {DiscordResponse}
+     * @param {String} access_token
+     * @returns {FacebookUser & FacebookError}
      */
-    async revoke(discordAccessToken) {
+    fetchUserInfo(access_token) {
+        return new Promise(resolve => 
+            FB.api('me', { fields: ['id', 'name'], access_token }, resolve));
+    }
 
-        const response = await fetch(`${OAuth2}revoke?token=${discordAccessToken}`, {
-            method: "POST",
-            headers: { Authorization: this.authorization }
+    /**
+     * @param {String} userID
+     * @param {String} fbAccessToken
+     * @returns {FacebookError|{ success: true }}
+     */
+    async revoke(userID, fbAccessToken) {
+
+        let res = await fetch(`https://graph.facebook.com/${userID}/permissions?access_token=${fbAccessToken}`, {
+            method: "DELETE"
         });
-        return await response.json();
+        let resJson = await res.json();
+        return resJson;
     }
 }
 

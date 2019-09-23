@@ -60,7 +60,6 @@ class DiscordAPI {
 
     /**
      * @param {String} discordAccessToken
-     * @returns {DiscordResponse}
      */
     async revoke(discordAccessToken) {
 

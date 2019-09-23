@@ -7,5 +7,14 @@
     "bundle": "browserify ./src/frontend_modules/main.js -o ./web/assets/js/bundle.js"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "btoa": "^1.2.1",
+    "cookie-parser": "^1.4.4",
+    "express": "^4.17.1",
+    "fb": "^2.0.0",
+    "mongoose": "^5.7.1",
+    "node-fetch": "^2.6.0",
+    "uid-safe": "^2.1.5"
+  }
 }

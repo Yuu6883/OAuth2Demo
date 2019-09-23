@@ -1,12 +1,4 @@
-/** @param {Map<string, string} map */
-const mapToJson = map => {
-    let a = {};
-    for (let [k, v] of map) {
-        a[k] = v;
-    }
-    return a;
-}
-
+const mapToJson = map => [...map.entries()].reduce((prev, curr) => (prev[curr[0]] = curr[1], prev), {});
 const jsonToMap = obj => new Map(Object.entries(obj));
 
 /** @type {APIRouter} */
@@ -74,8 +66,22 @@ module.exports = {
         res.json(userInfo);
 
     },
-    getLogout: function(req, res) {
-        
+    getLogout: async function(req, res) {
+        let cookieName = this.config.API.CookieName;
+        let cookieToken = req.cookies[cookieName];
+
+        if (!this.users.confirmToken(cookieToken))
+            return res.clearCookie(cookieName).redirect("/");
+
+        let user = await this.users.findByAuthedToken(cookieToken, "discord");
+
+        if (!user)
+            return void res.clearCookie(cookieName).redirect("/");
+
+        await this.OAuth2.Discord.revoke(user.OAuth2Token);
+        await this.users.deauthorize(user);
+
+        res.clearCookie(cookieName).redirect("/");
     },
     postLogout: async function(req, res) {
 

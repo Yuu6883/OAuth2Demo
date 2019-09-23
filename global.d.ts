@@ -84,6 +84,19 @@ interface DiscordAuthorization {
     refresh_token: string;
 }
 
+interface FacebookAuthorization {
+    access_token:  string;
+}
+
+interface FacebookUser {
+    id:   string;
+    name: string;
+}
+
+interface FacebookError {
+    error: object;
+}
+
 interface DiscordUser {
     id:            string;
     username:      string;
@@ -91,5 +104,18 @@ interface DiscordUser {
     avatar:        string;
     locale:        string;
 }
+
+interface GoogleUser {
+    id:          string;
+    family_name: string;
+    given_name:  string;
+    locale:      string;
+    picture:     string;
+    name:        string;
+}
+
+declare type ClientUser = ({ type: "facebook" } & FacebookUser) | 
+                          ({ type: "discord"  } & DiscordUser) |
+                          ({ type: "google"   } & GoogleUser);
 
 declare type $ = import("jquery");

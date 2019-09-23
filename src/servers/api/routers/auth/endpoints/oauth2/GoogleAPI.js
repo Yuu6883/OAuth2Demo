@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
 
 const OAuth2 = "https://www.googleapis.com/oauth2/v4/";
-const UserEndpoint = "http://discordapp.com/api/v6/users/@me";
+const UserEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo";
 const SCOPE = "https://www.googleapis.com/auth/userinfo.profile&approval_prompt=force&access_type=offline";
 
 class GoogleAPI {
@@ -14,12 +14,11 @@ class GoogleAPI {
                        `&client_id=${this.config.ID}` + 
                        `&client_secret=${this.config.Secret}`;
 
-        this.redirect = encodeURIComponent(
-                            `https://accounts.google.com/o/oauth2/auth?` + 
-                            `client_id=${this.config.ID}` + 
-                            `&redirect_uri=${this.config.Redirect}` + 
-                            `&response_type=code&` + 
-                            `scope=${SCOPE}`);
+        this.redirect = `https://accounts.google.com/o/oauth2/auth?` + 
+                        `client_id=${this.config.ID}&` + 
+                        `redirect_uri=${this.config.Redirect}&` + 
+                        `response_type=code&` + 
+                        `scope=${SCOPE}`;
     }
 
     get config() { return this.app.config.Auth.Google; }
@@ -28,7 +27,7 @@ class GoogleAPI {
     /**
      * @param {String} code
      * @param {Boolean} refresh
-     * @returns {DiscordResponse & DiscordAuthorization}
+     * @returns {}
      */
     async exchange(code, refresh) {
 
@@ -49,22 +48,22 @@ class GoogleAPI {
      * @param {String} googleAccessToken
      * @returns {}
      */
-    async parseUserInfo(googleAccessToken) {
+    async fetchUserInfo(googleAccessToken) {
 
         const response = await fetch(UserEndpoint, {
             method: "GET",
-            headers: { Authorization : `Bearer ${discordAccessToken}` }
+            headers: { Authorization : `Bearer ${googleAccessToken}` }
         });
         return await response.json();
     }
 
     /**
-     * @param {String} discordAccessToken
-     * @returns {DiscordResponse}
+     * @param {String} googleAccessToken
+     * @returns {}
      */
-    async revoke(discordAccessToken) {
+    async revoke(googleAccessToken) {
 
-        const response = await fetch(`${OAuth2}revoke?token=${discordAccessToken}`, {
+        const response = await fetch(`${OAuth2}revoke?token=${googleAccessToken}`, {
             method: "POST",
             headers: { Authorization: this.authorization }
         });

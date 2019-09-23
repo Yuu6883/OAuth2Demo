@@ -4,17 +4,18 @@ module.exports = new class API extends EventEmitter {
 
     constructor() {
         super();
-        /** @type {DiscordUser} */
+        /** @type {ClientUser} */
         this.userInfo = null;
-        this.supportedPlatform = ["discord"];
+        /** @type {OAuth2Type[]} */
+        this.supportedPlatform = ["discord", "facebook", "google"];
     }
 
     init() {
 
-        this.on("loginSuccess", () => localStorage.autoLogin = "ha")
-            .on("loginFail", () => delete localStorage.autoLogin)
+        this.on("loginSuccess" , () => localStorage.autoLogin = "ha")
+            .on("loginFail"    , () => delete localStorage.autoLogin)
             .on("logoutSuccess", () => delete localStorage.autoLogin)
-            .on("logoutFail", () => delete localStorage.autoLogin);
+            .on("logoutFail"   , () => delete localStorage.autoLogin);
 
         if (localStorage.autoLogin) this.login();
         else this.emit("needToLogin");
@@ -46,10 +47,23 @@ module.exports = new class API extends EventEmitter {
     }
 
     get avatarURL() {
-        if (!this.userInfo) return;
-        if (this.userInfo.type === "discord")
-            return `https://cdn.discordapp.com/avatars/` + 
-                   `${this.userInfo.id}/${this.userInfo.avatar}`;
+        if (!this.userInfo || !this.userInfo.type) return;
+
+        switch (this.userInfo.type) {
+
+            case "discord":
+                return `https://cdn.discordapp.com/avatars/` + 
+                        `${this.userInfo.id}/${this.userInfo.avatar}`;
+            
+            case "facebook":
+                return `http://graph.facebook.com/${this.userInfo.id}/picture?type=large`;
+
+            case "google":
+                return this.userInfo.picture;
+
+            default:
+                return "";
+        }
     }
 
     logout() {
