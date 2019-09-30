@@ -1,6 +1,7 @@
 const fetch = require("node-fetch");
 
 const OAuth2 = "https://www.googleapis.com/oauth2/v4/";
+const RevokeEndpoint = "https://accounts.google.com/o/oauth2/revoke";
 const UserEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo";
 const SCOPE = "https://www.googleapis.com/auth/userinfo.profile&approval_prompt=force&access_type=offline";
 
@@ -63,11 +64,13 @@ class GoogleAPI {
      */
     async revoke(googleAccessToken) {
 
-        const response = await fetch(`${OAuth2}revoke?token=${googleAccessToken}`, {
-            method: "POST",
-            headers: { Authorization: this.authorization }
+        /** @type {Response} */
+        const response = await fetch(`${RevokeEndpoint}?token=${googleAccessToken}`, {
+            method: "GET",
+            headers: { "Content-type" :"application/x-www-form-urlencoded" }
         });
-        return await response.json();
+
+        return response.status === 200;
     }
 }
 
