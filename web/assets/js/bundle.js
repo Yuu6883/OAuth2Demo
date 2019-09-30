@@ -648,20 +648,10 @@ module.exports = new class HUD {
         API.on("needToLogin",   this.showLoginPanel);
         API.on("loginSuccess",  this.showUserPanel);
 
-        this.isAutoLogin = API.autoLogin;
-
-        $(".facebook-login").click(() => API.redirectLogin("facebook", this.isAutoLogin));
-        $(".discord-login" ).click(() => API.redirectLogin("discord",  this.isAutoLogin));
-        $(".google-login"  ).click(() => API.redirectLogin("google",   this.isAutoLogin));
+        $(".facebook-login").click(() => API.redirectLogin("facebook"));
+        $(".discord-login" ).click(() => API.redirectLogin("discord"));
+        $(".google-login"  ).click(() => API.redirectLogin("google"));
         $(".logout-button" ).click(() => API.logout());
-    }
-
-    get isAutoLogin() {
-        return $("#remember_me").is(":checked");
-    }
-
-    set isAutoLogin(value) {
-        $("#remember_me").attr("checked", !!value);
     }
 
     showLoginPanel() {
