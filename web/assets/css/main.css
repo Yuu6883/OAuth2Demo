@@ -1,0 +1,63 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #111;
+}
+
+.theme-bg {
+    background-color: #333;
+}
+
+.login-button {
+    width: 50px;
+    height: 50px;
+    color: #fff!important;
+    opacity: 0.9;
+}
+
+a.uk-button {
+    opacity: 0.9;
+}
+
+a.uk-button:hover {
+    opacity: 1;
+}
+
+.facebook-theme {
+    background-color: #3C5A99;
+}
+
+.discord-theme {
+    background-color: #7289DA;
+}
+
+.google-theme {
+    background-color: #DB4437;
+}
+
+.text {
+    color: #fff;
+}
+
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.logout-button {
+    background-color: #DB4437;
+}
+
+#user-panel, #login-panel {
+    display: none;
+}
+
+#user-pfp {
+    width: 150px;
+    height: 150px;
+    border-radius: 10%;
+    border: 8px solid #eee;
+}

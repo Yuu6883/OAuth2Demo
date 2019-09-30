@@ -538,23 +538,31 @@ module.exports = new class API extends EventEmitter {
 
     init() {
 
-        this.on("loginSuccess", () => localStorage.autoLogin = "ha")
-            .on("loginFail", () => delete localStorage.autoLogin)
-            .on("logoutSuccess", () => delete localStorage.autoLogin)
-            .on("logoutFail", () => delete localStorage.autoLogin);
+        this.on("logoutSuccess", this.clearLogin)
+            .on("loginFail"    , this.clearLogin)
+            .on("logoutFail"   , this.clearLogin);
 
-        if (localStorage.autoLogin) this.login();
-        else this.emit("needToLogin");
+        if (localStorage.platform) 
+            this.login(localStorage.platform);
+        else
+            this.emit("needToLogin");
     }
 
+    clearLogin() {
+        delete localStorage.platform;
+        window.location.reload();
+    }
+
+    /** @param {OAuth2Type} platform */
     redirectLogin(platform) {
         if (!this.supportedPlatform.includes(platform)) 
             throw Error(`${platform} login is not supported yet`);
 
-        localStorage.autoLogin = "ha";
+        localStorage.platform = platform;
         window.location.replace(`${window.location.href.match(/^https?:\/\/.+\//)[0]}api/${platform}/login`);
     }
 
+    /** @param {OAuth2Type} platform */
     login(platform) {
         if (!this.supportedPlatform.includes(platform)) 
             throw Error(`${platform} login is not supported yet`);
@@ -579,8 +587,8 @@ module.exports = new class API extends EventEmitter {
 
             case "discord":
                 return `https://cdn.discordapp.com/avatars/` + 
-                        `${this.userInfo.id}/${this.userInfo.avatar}`;
-            
+                       `${this.userInfo.id}/${this.userInfo.avatar}`;
+
             case "facebook":
                 return `http://graph.facebook.com/${this.userInfo.id}/picture?type=large`;
 
@@ -588,7 +596,26 @@ module.exports = new class API extends EventEmitter {
                 return this.userInfo.picture;
 
             default:
-                return "";
+                throw new Error("Invalid User Type");
+        }
+    }
+
+    get name() {
+        if (!this.userInfo || !this.userInfo.type) return;
+
+        switch (this.userInfo.type) {
+
+            case "discord":
+                return `${this.userInfo.username}#${this.userInfo.discriminator}`;
+            
+            case "facebook":
+                return this.userInfo.name;
+
+            case "google":
+                return this.userInfo.given_name;
+
+            default:
+                throw new Error("Invalid User Type");
         }
     }
 
@@ -609,5 +636,50 @@ module.exports = new class API extends EventEmitter {
 }
 
 },{"events":1}],3:[function(require,module,exports){
-window.API = require("./api");
-},{"./api":2}]},{},[3]);
+const API = require("./api");
+
+module.exports = new class HUD {
+
+    constructor() {
+
+    }
+
+    init() {
+        API.on("needToLogin",   this.showLoginPanel);
+        API.on("loginSuccess",  this.showUserPanel);
+
+        this.isAutoLogin = API.autoLogin;
+
+        $(".facebook-login").click(() => API.redirectLogin("facebook", this.isAutoLogin));
+        $(".discord-login" ).click(() => API.redirectLogin("discord",  this.isAutoLogin));
+        $(".google-login"  ).click(() => API.redirectLogin("google",   this.isAutoLogin));
+        $(".logout-button" ).click(() => API.logout());
+    }
+
+    get isAutoLogin() {
+        return $("#remember_me").is(":checked");
+    }
+
+    set isAutoLogin(value) {
+        $("#remember_me").attr("checked", !!value);
+    }
+
+    showLoginPanel() {
+        $("#login-panel").show();
+    }
+
+    showUserPanel() {
+        $("#user-panel").show();
+        $("#username").text(API.name);
+        $("#user-pfp").attr("src", API.avatarURL);
+    }
+}
+},{"./api":2}],4:[function(require,module,exports){
+const API = require("./api");
+const HUD = require("./hud");
+
+$(window).on("load", () => {
+    HUD.init();
+    API.init();
+});
+},{"./api":2,"./hud":3}]},{},[4]);

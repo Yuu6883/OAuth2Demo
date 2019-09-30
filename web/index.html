@@ -25,6 +25,27 @@
     <title>Game Title</title>
 </head>
 <body>
-    
+    <div class="center uk-width-1-2@m uk-text-center theme-bg uk-padding">
+        <h1 class="text uk-margin">Title</h1>
+        <div id="login-panel">
+            <h3 class="text uk-margin">Login</h3>
+            <a class="uk-button uk-padding-small facebook-theme facebook-login">
+                <span uk-icon="icon:facebook;ratio:2.5" class="login-button"></span>
+            </a>
+            <a class="uk-button uk-padding-small discord-theme discord-login uk-margin-left">
+                <img class="uk-icon login-button" src="assets/img/discord.svg">
+            </a>
+            <a class="uk-button uk-padding-small google-theme google-login uk-margin-left">
+                <span uk-icon="icon:google;ratio:2.5" class="login-button"></span>
+            </a>
+        </div>
+        <div id="user-panel">
+            <img id="user-pfp">
+            <h3 id="username" class="text uk-margin"></h3>
+            <a class="uk-button logout-button uk-padding-small">
+                <span uk-icon="sign-out" class="text">Log Out</span>
+            </a>
+        </div>
+    </div>
 </body>
 </html>
