@@ -19,6 +19,18 @@ UserSchema.index({ UserID:      1 }, { unique: true });
 UserSchema.index({ OAuth2ID:    1 }, { unique: true });
 UserSchema.index({ CookieToken: 1 }, { unique: true, sparse: true });
 
+const mapToJson = map => [...map.entries()].reduce((prev, curr) => (prev[curr[0]] = curr[1], prev), {});
+const jsonToMap = obj => new Map(Object.entries(obj));
+
+// Pre and post transformation hook
+UserSchema.pre("save", function() {
+    this.UserInfo = jsonToMap(this.UserInfo);
+});
+
+UserSchema.post("init", doc => {
+    doc.UserInfo = mapToJson(doc.UserInfo);
+});
+
 /** @type {mongoose.Model<UserDocument, {}>} */
 const UserModel = mongoose.model("users", UserSchema);
 

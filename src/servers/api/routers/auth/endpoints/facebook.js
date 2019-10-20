@@ -1,5 +1,4 @@
-const mapToJson = map => [...map.entries()].reduce((prev, curr) => (prev[curr[0]] = curr[1], prev), {});
-const jsonToMap = obj => new Map(Object.entries(obj));
+const JWT = require("jsonwebtoken");
 
 /** @type {APIRouter} */
 module.exports = {
@@ -17,33 +16,54 @@ module.exports = {
         let cookieToken = req.cookies[cookieName];
 
         if (!this.users.confirmToken(cookieToken))
-            return void res.clearCookie(cookieName).status(400).send("Bad Cookie");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(400)
+                           .send("Bad Cookie");
 
         let user = await this.users.findByAuthedToken(cookieToken, "facebook");
 
         if (!user)
-            return void res.clearCookie(cookieName).status(404).send("User not found");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(404)
+                           .send("User not found");
 
         /** @type {} */
         let userInfo;
         /** @type {string} */
         let token;
 
-        if (user.UserInfoCache < new Date()) {
-            let result = await this.OAuth2.Facebook.fetchUserInfo(user.OAuth2Token);
-
-            token = await this.users.authorize(user, user.OAuth2Token, "", jsonToMap(result));
-            
-            userInfo = result;
-        } else {
+        if (user.UserInfoCache >= new Date()) {
             this.logger.debug(`Loading user info from cache`);
 
-            userInfo = mapToJson(user.UserInfo);
+            userInfo = user.UserInfo;
             token = await this.users.renewToken(user);
         }
 
-        userInfo.type = "facebook";
+        if (!userInfo || !userInfo.id) {
+            let result = await this.OAuth2.Facebook.fetchUserInfo(user.OAuth2Token);
 
+            token = await this.users.authorize(user, user.OAuth2Token, "", result);
+            
+            userInfo = result;
+        }
+
+        // Definitely something wrong
+        if (!userInfo || !userInfo.id) {
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .sendStatus(500);
+        }
+
+        userInfo.type = "facebook";
+        userInfo.uid  = user.UserID;
+
+        let jwt = JWT.sign(userInfo, this.config.API.JWTSecret, {
+            expiresIn: this.config.API.JWTExpire
+        });
+
+        res.cookie(this.config.API.JWTCookieName, jwt, { maxAge: this.config.API.JWTExpire });
         res.cookie(cookieName, token, { maxAge: this.config.API.CookieAge });
         res.json(userInfo);
 
@@ -53,12 +73,16 @@ module.exports = {
         let cookieToken = req.cookies[cookieName];
 
         if (!this.users.confirmToken(cookieToken))
-            return res.clearCookie(cookieName).redirect("/");
+            return res.clearCookie(this.config.API.JWTCookieName)
+                      .clearCookie(cookieName)
+                      .redirect("/");
 
         let user = await this.users.findByAuthedToken(cookieToken, "facebook");
 
         if (!user)
-            return void res.clearCookie(cookieName).redirect("/");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .redirect("/");
 
         let result = await this.OAuth2.Facebook.revoke(user.OAuth2ID, user.OAuth2Token);
 
@@ -67,7 +91,9 @@ module.exports = {
 
         await this.users.deauthorize(user);
 
-        res.clearCookie(cookieName).redirect("/");
+        res.clearCookie(this.config.API.JWTCookieName)
+           .clearCookie(cookieName)
+           .redirect("/");
     },
     postLogout: async function(req, res) {
 
@@ -75,12 +101,18 @@ module.exports = {
         let cookieToken = req.cookies[cookieName];
 
         if (!this.users.confirmToken(cookieToken))
-            return void res.clearCookie(cookieName).status(400).send("Bad Cookie");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(400)
+                           .send("Bad Cookie");
 
         let user = await this.users.findByAuthedToken(cookieToken, "facebook");
 
         if (!user)
-            return void res.clearCookie(cookieName).status(404).send("User not found");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(404)
+                           .send("User not found");
 
         let { success, error } = await this.OAuth2.Facebook.revoke(user.OAuth2ID, user.OAuth2Token);
 
@@ -89,7 +121,9 @@ module.exports = {
 
         await this.users.deauthorize(user);
 
-        res.clearCookie(cookieName).send({ success: success === true });
+        res.clearCookie(this.config.API.JWTCookieName)
+           .clearCookie(cookieName)
+           .send({ success: !!success });
             
     },
     callback: async function(req, res) {
@@ -134,7 +168,7 @@ module.exports = {
             if (!user)
                 user = await this.users.create(userInfo.id, "facebook");
 
-            let token = await this.users.authorize(user, result.access_token, "", jsonToMap(userInfo));
+            let token = await this.users.authorize(user, result.access_token, "", userInfo);
 
             res.cookie(this.config.API.CookieName, token, { maxAge: this.config.API.CookieAge });
         }

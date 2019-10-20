@@ -1,5 +1,6 @@
-const API = require("./api");
+const WS   = require("./ws");
+const API  = require("./api");
+const Log  = require("./log");
 const Auth = require("./auth");
-const Log = require("./log");
 
-module.exports = { API, Auth, Log };
+module.exports = { WS, API, Auth, Log };

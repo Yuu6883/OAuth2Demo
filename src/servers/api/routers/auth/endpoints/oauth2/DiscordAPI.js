@@ -42,7 +42,11 @@ class DiscordAPI {
             headers: { Authorization: this.authorization }
         });
 
-        return await response.json();
+        let jsonRes = await response.json();
+        
+        if (refresh) this.logger.debug("Refresh response", jsonRes);
+
+        return jsonRes;
     }
 
     /**

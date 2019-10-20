@@ -5,6 +5,9 @@ let DefaultAPIConfig = {
     DBPath: "mongodb://localhost:27017",
     DBName: "default-database",
     AllowedOrigin: null,
+    JWTCookieName: "default-jwt-cookie",
+    JWTExpire: 60 * 60 * 1000, // 1 hour
+    JWTSecret: "blablabla",
     CookieName: "default-cookie",
     CookieLength: 128,
     UserIDLength: 12,

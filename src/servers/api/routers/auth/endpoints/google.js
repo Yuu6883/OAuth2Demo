@@ -1,5 +1,4 @@
-const mapToJson = map => [...map.entries()].reduce((prev, curr) => (prev[curr[0]] = curr[1], prev), {});
-const jsonToMap = obj => new Map(Object.entries(obj));
+const JWT = require("jsonwebtoken");
 
 /** @type {APIRouter} */
 module.exports = {
@@ -17,19 +16,32 @@ module.exports = {
         let cookieToken = req.cookies[cookieName];
 
         if (!this.users.confirmToken(cookieToken))
-            return void res.clearCookie(cookieName).status(400).send("Bad Cookie");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(400)
+                           .send("Bad Cookie");
 
         let user = await this.users.findByAuthedToken(cookieToken, "google");
 
         if (!user)
-            return void res.clearCookie(cookieName).status(404).send("User not found");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(404)
+                           .send("User not found");
 
         /** @type {GoogleUser} */
         let userInfo;
         /** @type {string} */
         let token;
 
-        if (user.UserInfoCache < new Date()) {
+        if (user.UserInfoCache >= new Date()) {
+            this.logger.debug(`Loading user info from cache`);
+
+            userInfo = user.UserInfo;
+            token = await this.users.renewToken(user);
+        }
+
+        if (!userInfo || !userInfo.id) {
             let result = await this.OAuth2.Google.fetchUserInfo(user.OAuth2Token);
 
             if (result.error) {
@@ -47,41 +59,54 @@ module.exports = {
                     return void res.clearCookie(cookieName).status(500).send("Google Error (2)");
                 }
 
-                token = await this.users.authorize(user, refresh.access_token, refresh.refresh_token, jsonToMap(result));
+                token = await this.users.authorize(user, refresh.access_token, refresh.refresh_token, result);
             } else {
-                token = await this.users.authorize(user, user.OAuth2Token, user.OAuth2Refresh, jsonToMap(result));
+                token = await this.users.authorize(user, user.OAuth2Token, user.OAuth2Refresh, result);
             }
             
             userInfo = result;
-        } else {
-            this.logger.debug(`Loading user info from cache`);
+        }
 
-            userInfo = mapToJson(user.UserInfo);
-            token = await this.users.renewToken(user);
+        // Definitely something wrong
+        if (!userInfo || !userInfo.id) {
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .sendStatus(500);
         }
 
         userInfo.type = "google";
+        userInfo.uid  = user.UserID;
 
+        let jwt = JWT.sign(userInfo, this.config.API.JWTSecret, {
+            expiresIn: this.config.API.JWTExpire
+        });
+
+        res.cookie(this.config.API.JWTCookieName, jwt, { maxAge: this.config.API.JWTExpire });
         res.cookie(cookieName, token, { maxAge: this.config.API.CookieAge });
         res.json(userInfo);
-
     },
     getLogout: async function(req, res) {
         let cookieName = this.config.API.CookieName;
         let cookieToken = req.cookies[cookieName];
 
         if (!this.users.confirmToken(cookieToken))
-            return res.clearCookie(cookieName).redirect("/");
+            return res.clearCookie(this.config.API.JWTCookieName)
+                      .clearCookie(cookieName)
+                      .redirect("/");
 
         let user = await this.users.findByAuthedToken(cookieToken, "google");
 
         if (!user)
-            return void res.clearCookie(cookieName).redirect("/");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .redirect("/");
 
         await this.OAuth2.Google.revoke(user.OAuth2Token);
         await this.users.deauthorize(user);
 
-        res.clearCookie(cookieName).redirect("/");
+        res.clearCookie(this.config.API.JWTCookieName)
+           .clearCookie(cookieName)
+           .redirect("/");
     },
     postLogout: async function(req, res) {
 
@@ -89,18 +114,26 @@ module.exports = {
         let cookieToken = req.cookies[cookieName];
 
         if (!this.users.confirmToken(cookieToken))
-            return void res.clearCookie(cookieName).status(400).send("Bad Cookie");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(400)
+                           .send("Bad Cookie");
 
         let user = await this.users.findByAuthedToken(cookieToken, "google");
 
         if (!user)
-            return void res.clearCookie(cookieName).status(404).send("User not found");
+            return void res.clearCookie(this.config.API.JWTCookieName)
+                           .clearCookie(cookieName)
+                           .status(404)
+                           .send("User not found");
 
         let success = await this.OAuth2.Google.revoke(user.OAuth2Token);
 
         await this.users.deauthorize(user);
 
-        res.clearCookie(cookieName).send({ success });
+        res.clearCookie(this.config.API.JWTCookieName)
+           .clearCookie(cookieName)
+           .send({ success });
             
     },
     callback: async function(req, res) {
@@ -145,7 +178,7 @@ module.exports = {
             if (!user)
                 user = await this.users.create(userInfo.id, "google");
 
-            let token = await this.users.authorize(user, result.access_token, result.refresh_token, jsonToMap(userInfo));
+            let token = await this.users.authorize(user, result.access_token, result.refresh_token, userInfo);
 
             res.cookie(this.config.API.CookieName, token, { maxAge: this.config.API.CookieAge });
         }

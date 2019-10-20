@@ -1,6 +1,12 @@
 interface Config {
+    WS:   WSConfig;
     API:  APIConfig;
     Auth: AuthConfig;
+}
+
+interface WSConfig {
+    port:    number;
+    timeout: number;
 }
 
 interface APIConfig {
@@ -9,6 +15,9 @@ interface APIConfig {
     AllowedOrigin: string;
     InfoCache:     number;
     UserIDLength:  number;
+    JWTCookieName: string;
+    JWTSecret:     string;
+    JWTExpire:     string;
     CookieName:    string;
     CookieLength:  number;
     CookieAge:     number;
@@ -34,7 +43,7 @@ declare type OAuth2Type = "discord" | "google" | "facebook";
 
 interface UserEntry {
     UserID:        string,
-    UserInfo:      Map<string, string>,
+    UserInfo:      Object<string, string>,
     UserInfoCache: Date,
     OAuth2ID:      string,
     OAuth2Type:    OAuth2Type,
@@ -89,6 +98,7 @@ interface FacebookAuthorization {
 }
 
 interface FacebookUser {
+    uid:         string;
     id:   string;
     name: string;
 }
@@ -98,6 +108,7 @@ interface FacebookError {
 }
 
 interface DiscordUser {
+    uid:         string;
     id:            string;
     username:      string;
     discriminator: string;
@@ -106,6 +117,7 @@ interface DiscordUser {
 }
 
 interface GoogleUser {
+    uid:         string;
     id:          string;
     family_name: string;
     given_name:  string;

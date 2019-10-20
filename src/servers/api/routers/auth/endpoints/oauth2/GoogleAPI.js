@@ -60,7 +60,7 @@ class GoogleAPI {
 
     /**
      * @param {String} googleAccessToken
-     * @returns {}
+     * @returns {boolean}
      */
     async revoke(googleAccessToken) {
 
