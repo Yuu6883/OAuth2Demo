@@ -24,7 +24,22 @@ class Connection {
             let index = Connection.EVENT_VALUES.indexOf(event);
 
             if (index >= 0) {
-                this[`on${Connection.EVENTS_KEYS[index].toLowerCase()}`](view);
+
+                let method = `on${Connection.EVENTS_KEYS[index].toLowerCase()}`; 
+                
+                if (this[method]) {
+                    
+                    try {
+                        this[method](view);
+                    } catch (e) {
+                        this.logger.onError(`Error while running ${method} ` +
+                                             this.toString(), e);
+                    }
+
+                } else {
+                    this.logger.warn(`Handler function ${method} not found`);
+                }
+
             } else {
                 this.logger.warn(`Unknown event from client`);
             }
@@ -40,6 +55,11 @@ class Connection {
     onpong() {
         this.logger.warn("Server shouldn't receive pong packet");
         this.disconnect();
+    }
+
+    /** @param {DataView} view */
+    onchat(view) {
+        let message = this.readUTF8(view, 1);
     }
 
     disconnect() {
@@ -77,7 +97,6 @@ class Connection {
         return `[${this.socket.remoteAddress}] ` +
                 `${this.username}(${this.user.uid})`;
     }
-
     
     /**
      * @param {DataView} view 
@@ -92,11 +111,51 @@ class Connection {
         return view;
     }
 
+    /**
+     * @param {DataView} view 
+     * @param {string} string
+     * @param {number} startOffset 
+     */
+    writeUTF16(view, string, startOffset) {
+        startOffset = startOffset || 0;
+
+        for (let i = 0; i < string.length; i += 2)
+            view.setUint16(i + startOffset, string.charCodeAt(i));
+        return view;
+    }
+
+    /**
+     * @param {DataView} view 
+     * @param {number} offset 
+     */
+    readUTF8(view, offset) {
+        let str = "";
+        for (let i = offset; i < view.byteLength; i++) {
+            str += String.fromCharCode(view.getUint8(offset));
+        }
+        return str;
+    }
+
+    /**
+     * @param {DataView} view 
+     * @param {number} offset
+     */
+    readUTF16(view, offset) {
+        let str = "";
+        for (let i = offset; i < view.byteLength; i += 2) {
+            str += String.fromCharCode(view.getUint16(offset));
+        }
+        return str;
+    }
+
+    
 }
 
+Connection.id = 0;
 Connection.EVENTS = {
     PING: 0,
     PONG: 1,
+    CHAT: 2,
 }
 
 Connection.EVENTS_KEYS  = Object.keys(Connection.EVENTS);
