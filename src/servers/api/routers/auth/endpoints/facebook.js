@@ -153,14 +153,14 @@ module.exports = {
 
             if (result.error) {
                 this.logger.onError(`Facebook refused callback code: ${req.query.code}`);
-                return void res.redirect("/502");
+                return void res.redirect("/500");
             }
 
             let userInfo = await this.OAuth2.Facebook.fetchUserInfo(result.access_token);
 
             if (userInfo.error) {
                 this.logger.onError(`Facebook refused access code at callback ${req.query.code}`, userInfo);
-                return void res.redirect("/502");
+                return void res.redirect("/500");
             }
 
             let user = await this.users.findByOAuth2ID(userInfo.id);
