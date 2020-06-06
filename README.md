@@ -1,4 +1,4 @@
-# webgame2
+# OAuth2Demo
 
 ### Setup
 ```
