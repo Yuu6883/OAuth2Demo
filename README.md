@@ -2,8 +2,8 @@
 
 ### Setup
 ```
-git clone https://github.com/Yuu6883/webgame2.git
-cd webgame2
+git clone https://github.com/Yuu6883/OAuth2Demo.git
+cd OAuth2Demo
 npm i
 ```
 
